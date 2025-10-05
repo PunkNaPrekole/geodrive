@@ -1,0 +1,35 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    uses: ./.github/workflows/tests.yml
+
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  quality-gate:
+    needs: [test, lint ]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Check CI results
+      run: |
+        echo "Результаты CI:"
+        echo "Tests: ${{ needs.test.result }}"
+        echo "Lint: ${{ needs.lint.result }}"
+        
+        if [[ "${{ needs.test.result }}" == "success" && 
+              "${{ needs.lint.result }}" == "success" ]]; then
+          echo "Все проверки пройдены!"
+          exit 0
+        else
+          echo "Некоторые проверки не пройдены"
+          exit 1
+        fi

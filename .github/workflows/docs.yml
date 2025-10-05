@@ -1,0 +1,53 @@
+name: Build Documentation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv and set the Python version
+      uses: astral-sh/setup-uv@v6
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        uv pip install -e .
+        uv sync --group docs
+
+    - name: Build HTML docs
+      run: |
+        cd docs
+        make html
+
+    - name: Upload artifacts
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: docs/_build/html
+
+  deploy-docs:
+    needs: docs
+    if: github.ref == 'refs/heads/main'
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
