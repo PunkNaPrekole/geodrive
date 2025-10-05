@@ -1,6 +1,6 @@
 [project]
 name = "geodrive"
-version = "0.1.1"
+version = "0.0.1"
 description = "Universal SDK for rover programming"
 readme = "README.md"
 license = {text = "MIT"}
@@ -17,6 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
