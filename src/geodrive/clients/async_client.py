@@ -120,7 +120,7 @@ class AsyncRoverClient:
         """
         await self._communicator.send_command(RoverCommands.BEEP)
 
-    async def goto(self, x: float, y: float, yaw:float | None=None):
+    async def goto(self, x: float, y: float, yaw: float | None=None):
         """
         Перемещение робота в заданную точку.
 

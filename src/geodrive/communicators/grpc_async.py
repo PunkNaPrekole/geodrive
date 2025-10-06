@@ -189,18 +189,19 @@ class AsyncGRPCCommunicator(BaseCommunicator):
             yield Telemetry.from_proto(response)
 
     async def goto(
-            self, x:
-            float, y:
-            float, yaw: float | None
+            self,
+            x: float,
+            y: float,
+            yaw: float | None
     ):
         request = GotoCommand(target_x=x, target_y=y, target_yaw=yaw)
         response = await self.stub.goto(request)
         return response
 
     async def goto_stream_position(
-            self,x:
-            float, y:
-            float,
+            self,
+            x: float,
+            y: float,
             yaw: float | None=None
     ) -> AsyncGenerator[GotoProgress, None]:
         command = GotoCommand(target_x=x, target_y=y)
