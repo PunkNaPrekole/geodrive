@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/PunkNaPrekole/geodrive/main/docs/_static/logo.png" alt="geodrive" style="width: 500px;">
+  <img src="https://github.com/PunkNaPrekole/geodrive/blob/dev/docs/source/_static/logo.png" alt="geodrive" style="width: 500px;">
 </p>
 
 <p align="center">
