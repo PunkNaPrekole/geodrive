@@ -1,4 +1,0 @@
-
-
-class PeripheralsManager:
-    pass

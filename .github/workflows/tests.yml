@@ -21,16 +21,10 @@ jobs:
             python-version: ${{ matrix.python-version }}
 
       - name: Install the project
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked --group test
 
       - name: Run tests
-        run: uv run pytest tests/ --cov=./ --cov-report=xml -v
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-
+        run: uv run pytest tests/
 
   test-windows:
     runs-on: windows-latest
@@ -46,15 +40,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install the project
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked --group test
 
       - name: Run tests
-        run: uv run pytest tests/ --cov=./ --cov-report=xml -v
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
+        run: uv run pytest tests/
 
   test-macos:
     runs-on: macos-latest
@@ -70,12 +59,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install the project
-      run: uv sync --locked --all-extras --dev
+      run: uv sync --locked --group test
 
     - name: Run tests
-      run: uv run pytest tests/ --cov=./ --cov-report=xml -v
-
-    - name: Upload coverage
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
+      run: uv run pytest tests/

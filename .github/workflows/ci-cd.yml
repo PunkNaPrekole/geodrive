@@ -14,7 +14,7 @@ jobs:
     uses: ./.github/workflows/lint.yml
 
   quality-gate:
-    needs: [test, lint ]
+    needs: [ test, lint ]
     runs-on: ubuntu-latest
     if: always()
 
