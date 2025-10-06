@@ -31,6 +31,23 @@ class GRPCCommunicator(BaseCommunicator):
         self.stub: RoverServiceStub | None = None
         self._is_connected: bool = False
 
+    @property
+    def is_connected(self) -> bool:
+        """
+        Проверить подключение к роботу.
+
+        :return: True если подключение активно
+        :rtype: bool
+        """
+        return self._is_connected
+
+    def _check_connection(self):
+        """
+        Проверка соединения
+        """
+        request = Empty()
+        self.stub.get_status(request)
+
     def connect(self) -> bool:
         """
         Установка синхронного соединения
@@ -54,12 +71,15 @@ class GRPCCommunicator(BaseCommunicator):
             self.disconnect()
             return False
 
-    def _check_connection(self):
+    def disconnect(self):
         """
-        Проверка соединения
+        Закрытие соединения
         """
-        request = Empty()
-        self.stub.get_status(request)
+        if self.channel:
+            self.channel.close()
+            self.channel = None
+            self.stub = None
+            self._is_connected = False
 
     def send_command(self, command: RoverCommands, **kwargs) -> CommandResult:
         """
@@ -168,23 +188,3 @@ class GRPCCommunicator(BaseCommunicator):
 
         for progress in progress_stream:
             yield progress
-
-    def disconnect(self):
-        """
-        Закрытие соединения
-        """
-        if self.channel:
-            self.channel.close()
-            self.channel = None
-            self.stub = None
-            self._is_connected = False
-
-    @property
-    def is_connected(self) -> bool:
-        """
-        Проверить подключение к роботу.
-
-        :return: True если подключение активно
-        :rtype: bool
-        """
-        return self._is_connected

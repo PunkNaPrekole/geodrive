@@ -14,7 +14,8 @@ from ..generated import (
     LedCommand,
     LedCustomCommand,
     BatteryData,
-    GotoCommand
+    GotoCommand,
+    GotoProgress
 )
 
 
@@ -38,6 +39,23 @@ class AsyncGRPCCommunicator(BaseCommunicator):
         self.channel: grpc.aio.Channel | None = None
         self.stub: RoverServiceStub | None = None
         self._is_connected: bool = False
+
+    @property
+    def is_connected(self) -> bool:
+        """
+        Проверить подключение к роверу.
+
+        :return: True если подключение активно
+        :rtype: bool
+        """
+        return self._is_connected
+
+    async def _check_connection(self):
+        """
+        Проверка соединения
+        """
+        request = Empty()
+        await self.stub.get_status(request)
 
     async def connect(self) -> bool:
         """
@@ -64,14 +82,21 @@ class AsyncGRPCCommunicator(BaseCommunicator):
             await self.disconnect()
             return False
 
-    async def _check_connection(self):
+    async def disconnect(self):
         """
-        Проверка соединения
+        Отключиться от ровера
         """
-        request = Empty()
-        await self.stub.get_status(request)
+        if self.channel:
+            await self.channel.close()
+            self.channel = None
+            self.stub = None
+            self._is_connected = False
 
-    async def send_command(self, command: RoverCommands, **kwargs) -> CommandResult:
+    async def send_command(
+            self,
+            command: RoverCommands,
+            **kwargs
+    ) -> CommandResult:
         """
         Отправить команду роверу.
 
@@ -115,7 +140,7 @@ class AsyncGRPCCommunicator(BaseCommunicator):
             error_code=response.error_code
         )
 
-    async def get_status(self):
+    async def get_status(self) -> RoverStatus:
         """
         Получить текущий статус ровера.
 
@@ -139,7 +164,7 @@ class AsyncGRPCCommunicator(BaseCommunicator):
         response: BatteryData = await self.stub.get_voltage(request)
         return response.battery_voltage
 
-    async def get_telemetry(self):
+    async def get_telemetry(self) -> Telemetry:
         """
         Получить телеметрию ровера.
 
@@ -163,12 +188,21 @@ class AsyncGRPCCommunicator(BaseCommunicator):
         async for response in self.stub.stream_telemetry(request):
             yield Telemetry.from_proto(response)
 
-    async def goto(self, x, y, yaw):
+    async def goto(
+            self, x:
+            float, y:
+            float, yaw: float | None
+    ):
         request = GotoCommand(target_x=x, target_y=y, target_yaw=yaw)
         response = await self.stub.goto(request)
         return response
 
-    async def goto_stream_position(self,x: float, y: float, yaw: float | None=None):
+    async def goto_stream_position(
+            self,x:
+            float, y:
+            float,
+            yaw: float | None=None
+    ) -> AsyncGenerator[GotoProgress, None]:
         command = GotoCommand(target_x=x, target_y=y)
         if yaw is not None:
             command.target_yaw = yaw
@@ -176,24 +210,3 @@ class AsyncGRPCCommunicator(BaseCommunicator):
 
         async for progress in progress_stream:
             yield progress
-
-
-    async def disconnect(self):
-        """
-        Отключиться от ровера
-        """
-        if self.channel:
-            await self.channel.close()
-            self.channel = None
-            self.stub = None
-            self._is_connected = False
-
-    @property
-    def is_connected(self) -> bool:
-        """
-        Проверить подключение к роверу.
-
-        :return: True если подключение активно
-        :rtype: bool
-        """
-        return self._is_connected
