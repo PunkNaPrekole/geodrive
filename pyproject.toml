@@ -1,6 +1,6 @@
 [project]
 name = "geodrive"
-version = "0.0.1"
+version = "0.0.3"
 description = "Universal SDK for rover programming"
 readme = "README.md"
 license = {text = "MIT"}
