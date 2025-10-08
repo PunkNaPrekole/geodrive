@@ -1,11 +1,10 @@
 import threading
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Generator
 
 from ..commands import RoverCommands
 from ..communicators import GRPCCommunicator
-from ..schemas import Telemetry, CommandResult
-from ..generated import RCChannelsCommand
+from ..generated import RCChannelsCommand, CommandAck, TelemetryData, BatteryData
 
 
 class RoverClient:
@@ -53,7 +52,7 @@ class RoverClient:
         """
         return self._is_rc_streaming
 
-    def set_velocity(self, linear: float, angular: float) -> CommandResult:
+    def set_velocity(self, linear: float, angular: float) -> CommandAck:
         """
         Установка линейной и угловой скорости робота
 
@@ -70,7 +69,7 @@ class RoverClient:
             angular=angular
         )
 
-    def set_differential_speed(self, left: float, right: float) -> CommandResult:
+    def set_differential_speed(self, left: float, right: float) -> CommandAck:
         """
         Дифференциальное управление скоростями левого и правого колес.
 
@@ -91,7 +90,7 @@ class RoverClient:
             right=right
         )
 
-    def get_telemetry(self) -> Telemetry:
+    def get_telemetry(self) -> TelemetryData:
         """
         Получение телеметрии робота
 
@@ -100,22 +99,22 @@ class RoverClient:
         """
         return self._communicator.get_telemetry()
 
-    def get_battery_status(self) -> int:
+    def get_battery_status(self) -> BatteryData:
         """
         Получение заряда батареи
 
         :return: Заряд батареи в процентах
         :rtype: int
         """
-        return self._communicator.get_voltage()
+        return self._communicator.get_battery_status()
 
-    def moo(self) -> CommandResult:
+    def moo(self) -> CommandAck:
         """
         Воспроизведение звука "мычания"
         """
         return self._communicator.send_command(RoverCommands.MOO)
 
-    def beep(self) -> CommandResult:
+    def beep(self) -> CommandAck:
         """
         Воспроизведение звукового сигнала
         """
@@ -134,24 +133,24 @@ class RoverClient:
         """
         self._communicator.goto(x=x, y=y, yaw=yaw)
 
-    def stop(self) -> CommandResult:
+    def stop(self) -> CommandAck:
         """
         Остановка
         """
         return self._communicator.send_command(RoverCommands.STOP)
 
-    def emergency_stop(self) -> CommandResult:
+    def emergency_stop(self) -> CommandAck:
         """
         Аварийная остановка
         """
         return self._communicator.send_command(RoverCommands.EMERGENCY_STOP)
 
-    def stream_telemetry(self) -> Iterator[Telemetry]:
+    def stream_telemetry(self) -> Generator[TelemetryData]:
         """
         Потоковое получение телеметрии
 
-        :return: Итератор данных телеметрии
-        :rtype: Iterator[Telemetry]
+        :return: Генератор данных телеметрии
+        :rtype: Generator[TelemetryData]
 
         :Example:
             .. code-block:: python

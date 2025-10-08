@@ -3,9 +3,9 @@ from typing import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from ..commands import RoverCommands
-from ..generated import RCChannelsCommand
+from ..generated import RCChannelsCommand, CommandAck, TelemetryData, BatteryData
 from ..communicators import AsyncGRPCCommunicator
-from ..schemas import Telemetry, CommandResult
+from ..logging import get_logger
 
 
 class AsyncRoverClient:
@@ -13,11 +13,12 @@ class AsyncRoverClient:
     Асинхронный клиент для управления ровером
     """
 
-    def __init__(self, host: str = "localhost", port: int = 5656):
+    def __init__(self, host: str = "localhost", port: int = 5656, logging: bool = False):
         self._communicator = AsyncGRPCCommunicator(host, port)
         self._is_rc_streaming: bool = False
         self._rc_stream_task = None
         self._rc_stream_interval: float = 0.05
+        self._logger = get_logger()
         self.rc_channels = RCChannelsCommand(
             channel1=1500,
             channel2=1500,
@@ -29,13 +30,23 @@ class AsyncRoverClient:
         """
         Подключение к роботу
         """
-        return await self._communicator.connect()
+        self._logger.info("connecting to rover...")
+        result = await self._communicator.connect()
+
+        if result:
+            self._logger.info("rover connected successfully!")
+        else:
+            self._logger.error("rover connection failed!")
+
+        return result
 
     async def disconnect(self):
         """
         Отключение от робота
         """
+        self._logger.info("disconnecting from rover...")
         await self._communicator.disconnect()
+        self._logger.info("rover disconnected!")
 
     @property
     def is_connected(self) -> bool:
@@ -51,7 +62,7 @@ class AsyncRoverClient:
         """
         return self._is_rc_streaming
 
-    async def set_velocity(self, linear: float, angular: float) -> CommandResult:
+    async def set_velocity(self, linear: float, angular: float) -> CommandAck:
         """
         Установка линейной и угловой скорости робота
 
@@ -69,7 +80,7 @@ class AsyncRoverClient:
         )
 
 
-    async def set_differential_speed(self, left: float, right: float) -> CommandResult:
+    async def set_differential_speed(self, left: float, right: float) -> CommandAck:
         """
         Дифференциальное управление скоростями левого и правого колес.
 
@@ -90,7 +101,7 @@ class AsyncRoverClient:
             right=right
         )
 
-    async def get_telemetry(self) -> Telemetry:
+    async def get_telemetry(self) -> TelemetryData:
         """
         Получение телеметрии робота
 
@@ -99,14 +110,14 @@ class AsyncRoverClient:
         """
         return await self._communicator.get_telemetry()
 
-    async def get_battery_status(self) -> int:
+    async def get_battery_status(self) -> BatteryData:
         """
         Получение заряда батареи
 
         :return: Заряд батареи в процентах
         :rtype: int
         """
-        return await self._communicator.get_voltage()
+        return await self._communicator.get_battery_status()
 
     async def moo(self):
         """
@@ -133,32 +144,32 @@ class AsyncRoverClient:
         """
         await self._communicator.goto(x=x, y=y, yaw=yaw)
 
-    async def stop(self) -> CommandResult:
+    async def stop(self) -> CommandAck:
         """
         Остановка
         """
         return await self._communicator.send_command(RoverCommands.STOP)
 
-    async def emergency_stop(self) -> CommandResult:
+    async def emergency_stop(self) -> CommandAck:
         """
         Аварийная остановка
         """
         return await self._communicator.send_command(RoverCommands.EMERGENCY_STOP)
 
-    async def stream_telemetry(self) -> AsyncGenerator[Telemetry, None]:
+    async def stream_telemetry(self) -> AsyncGenerator[TelemetryData, None]:
         """
         Потоковое получение телеметрии
 
         Генератор, возвращающий данные телеметрии в реальном времени.
 
         :return: Асинхронный генератор данных телеметрии
-        :rtype: AsyncGenerator[Telemetry, None]
+        :rtype: AsyncGenerator[TelemetryData, None]
 
         :Example:
             .. code-block:: python
 
                 async for telemetry in rover.stream_telemetry():
-                    print(f"Position: {telemetry.x}, {telemetry.y}")
+                    print(f"Position: {telemetry.position.x}, {telemetry.position.y}")
         """
         async for data in self._communicator.stream_telemetry():
             yield data
@@ -175,19 +186,21 @@ class AsyncRoverClient:
             .. code-block:: python
                 async with rover.rc_stream_context() as rc_control:
                     # Устанавливаем каналы управления
-                    rc_control.channel1 = 1600  # Вперед
-                    rc_control.channel2 = 1400  # Поворот влево
+                    rc_control.channel1 = 2000  # Вперед
+                    rc_control.channel2 = 1000  # Поворот влево
                     await asyncio.sleep(2.0)
 
                     # Меняем команду
                     rc_control.channel1 = 1500  # Стоп
         """
+        self._logger.info("entering rc_stream_context")
         try:
             await self.start_rc_stream()
 
             yield self.rc_channels
 
         finally:
+            self._logger.debug("exiting rc_stream_context")
             await self.stop_rc_stream()
 
     async def start_rc_stream(self):

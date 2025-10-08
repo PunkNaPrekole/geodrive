@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from ..commands import RoverCommands
-from ..schemas import CommandResult
+from ..generated import CommandAck
 
 
 class BaseCommunicator(ABC):
@@ -19,7 +19,7 @@ class BaseCommunicator(ABC):
         pass
     
     @abstractmethod
-    def send_command(self, command: RoverCommands, **kwargs) -> CommandResult:
+    def send_command(self, command: RoverCommands, **kwargs) -> CommandAck:
         pass
 
     @abstractmethod
@@ -31,7 +31,7 @@ class BaseCommunicator(ABC):
         pass
 
     @abstractmethod
-    def get_voltage(self):
+    def get_battery_status(self):
         pass
 
     @abstractmethod

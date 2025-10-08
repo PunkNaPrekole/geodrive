@@ -3,19 +3,22 @@ from typing import AsyncGenerator
 
 import grpc
 
-from ..schemas import CommandResult, Telemetry, RoverStatus
 from ..commands import RoverCommands
 from .base import BaseCommunicator
 from ..generated import (
     RoverServiceStub,
-    Empty,
-    VelocityCommand,
     DifferentialCommand,
-    LedCommand,
     LedCustomCommand,
-    BatteryData,
+    VelocityCommand,
+    TelemetryData,
+    GotoProgress,
     GotoCommand,
-    GotoProgress
+    BatteryData,
+    RoverStatus,
+    LedCommand,
+    CommandAck,
+    GotoAck,
+    Empty
 )
 
 
@@ -96,7 +99,7 @@ class AsyncGRPCCommunicator(BaseCommunicator):
             self,
             command: RoverCommands,
             **kwargs
-    ) -> CommandResult:
+    ) -> CommandAck:
         """
         Отправить команду роверу.
 
@@ -104,7 +107,7 @@ class AsyncGRPCCommunicator(BaseCommunicator):
         :type command: RoverCommands
         :param kwargs: Параметры команды
         :return: Результат выполнения команды
-        :rtype: CommandResult
+        :rtype: CommandAck
         """
         request = Empty()
 
@@ -132,13 +135,11 @@ class AsyncGRPCCommunicator(BaseCommunicator):
             case RoverCommands.MOO:
                 response = await self.stub.moo(request)
             case _:
-                return CommandResult.failed(f"Unknown command: {command}")
-
-        return CommandResult(
-            success=response.success,
-            message=response.message,
-            error_code=response.error_code
-        )
+                response = CommandAck(
+                    success=False,
+                    message=f"Unknown command: {command}"
+                )
+        return response
 
     async def get_status(self) -> RoverStatus:
         """
@@ -149,51 +150,51 @@ class AsyncGRPCCommunicator(BaseCommunicator):
         """
         request = Empty()
         response = await self.stub.get_status(request)
-        return RoverStatus.from_proto(response)
+        return response
 
-    async def get_voltage(self) -> int:
+    async def get_battery_status(self) -> BatteryData:
         """
         Получить данные о заряде батареи ровера.
 
         Возвращает данные о заряде батареи ровера.
 
-        :return: Заряд батареи в процентах
+        :return: Статус батареи с полями voltage и percentage
         :rtype: int
         """
         request = Empty()
-        response: BatteryData = await self.stub.get_voltage(request)
-        return response.battery_voltage
+        response = await self.stub.get_battery_status(request)
+        return response
 
-    async def get_telemetry(self) -> Telemetry:
+    async def get_telemetry(self) -> TelemetryData:
         """
         Получить телеметрию ровера.
 
         Возвращает данные о положении, скорости и углах эйлера ровера.
 
         :return: Объект телеметрии
-        :rtype: Telemetry
+        :rtype: TelemetryData
         """
         request = Empty()
         response = await self.stub.get_telemetry(request)
-        return Telemetry.from_proto(response)
+        return response
 
-    async def stream_telemetry(self) -> AsyncGenerator[Telemetry, None]:
+    async def stream_telemetry(self) -> AsyncGenerator[TelemetryData, None]:
         """
         Получить поток телеметрии в реальном времени.
 
-        :return: Асинхронный генератор объектов Telemetry
-        :rtype: AsyncGenerator[Telemetry, None]
+        :return: Асинхронный генератор объектов TelemetryData
+        :rtype: AsyncGenerator[TelemetryData, None]
         """
         request = Empty()
         async for response in self.stub.stream_telemetry(request):
-            yield Telemetry.from_proto(response)
+            yield response
 
     async def goto(
             self,
             x: float,
             y: float,
             yaw: float | None
-    ):
+    ) -> GotoAck:
         request = GotoCommand(target_x=x, target_y=y, target_yaw=yaw)
         response = await self.stub.goto(request)
         return response

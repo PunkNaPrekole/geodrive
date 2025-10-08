@@ -1,21 +1,26 @@
 import time
-from typing import Iterator
+from typing import Generator
 
 import grpc
 
-from ..schemas import CommandResult, Telemetry, RoverStatus
 from ..commands import RoverCommands
 from .base import BaseCommunicator
 from ..generated import (
     RoverServiceStub,
-    Empty,
-    VelocityCommand,
     DifferentialCommand,
-    LedCommand,
     LedCustomCommand,
+    VelocityCommand,
+    TelemetryData,
+    GotoProgress,
+    GotoCommand,
     BatteryData,
-    GotoCommand
+    RoverStatus,
+    LedCommand,
+    CommandAck,
+    GotoAck,
+    Empty
 )
+
 
 
 class GRPCCommunicator(BaseCommunicator):
@@ -81,7 +86,7 @@ class GRPCCommunicator(BaseCommunicator):
             self.stub = None
             self._is_connected = False
 
-    def send_command(self, command: RoverCommands, **kwargs) -> CommandResult:
+    def send_command(self, command: RoverCommands, **kwargs) -> CommandAck:
         """
         Отправка команды
         """
@@ -111,13 +116,12 @@ class GRPCCommunicator(BaseCommunicator):
             case RoverCommands.MOO:
                 response = self.stub.moo(request)
             case _:
-                return CommandResult.failed(f"Unknown command: {command}")
+                response = CommandAck(
+                    success=False,
+                    message=f"Unknown command: {command}"
+                )
 
-        return CommandResult(
-            success=response.success,
-            message=response.message,
-            error_code=response.error_code
-        )
+        return response
 
     def get_status(self) -> RoverStatus:
         """
@@ -125,36 +129,41 @@ class GRPCCommunicator(BaseCommunicator):
         """
         request = Empty()
         response = self.stub.get_status(request)
-        return RoverStatus.from_proto(response)
+        return response
 
-    def get_voltage(self) -> int:
+    def get_battery_status(self) -> BatteryData:
         """
         Получение напряжения
         """
         request = Empty()
-        response: BatteryData = self.stub.get_voltage(request)
-        return response.battery_voltage
+        response: BatteryData = self.stub.get_battery_status(request)
+        return response
 
-    def get_telemetry(self) -> Telemetry:
+    def get_telemetry(self) -> TelemetryData:
         """
         Получение телеметрии
         """
         request = Empty()
         response = self.stub.get_telemetry(request)
-        return Telemetry.from_proto(response)
+        return response
 
-    def stream_telemetry(self) -> Iterator[Telemetry]:
+    def stream_telemetry(self) -> Generator[TelemetryData]:
         """
         Получить поток телеметрии в реальном времени.
 
-        :return: Генератор объектов Telemetry
-        :rtype: Iterator[Telemetry]
+        :return: Генератор объектов TelemetryData
+        :rtype: Generator[TelemetryData]
         """
         request = Empty()
         for response in self.stub.stream_telemetry(request):
-            yield Telemetry.from_proto(response)
+            yield response
 
-    def goto(self, x: float, y: float, yaw: float | None=None):
+    def goto(
+            self,
+            x: float,
+            y: float,
+            yaw: float | None=None
+    ) -> GotoAck:
         """
         Движение к указанно точке
 
@@ -168,7 +177,12 @@ class GRPCCommunicator(BaseCommunicator):
         response = self.stub.goto(request)
         return response
 
-    def goto_stream_position(self,x: float, y: float, yaw: float | None=None):
+    def goto_stream_position(
+            self,
+            x: float,
+            y: float,
+            yaw: float | None=None
+    ) -> Generator[GotoProgress]:
         """
         Выполнить движение к точке с потоковой передачей прогресса.
 
