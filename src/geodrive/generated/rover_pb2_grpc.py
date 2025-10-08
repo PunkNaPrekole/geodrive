@@ -59,16 +59,6 @@ class RoverServiceStub(object):
                 request_serializer=rover__pb2.Empty.SerializeToString,
                 response_deserializer=rover__pb2.CommandAck.FromString,
                 _registered_method=True)
-        self.beep = channel.unary_unary(
-                '/rover.RoverService/beep',
-                request_serializer=rover__pb2.Empty.SerializeToString,
-                response_deserializer=rover__pb2.CommandAck.FromString,
-                _registered_method=True)
-        self.moo = channel.unary_unary(
-                '/rover.RoverService/moo',
-                request_serializer=rover__pb2.Empty.SerializeToString,
-                response_deserializer=rover__pb2.CommandAck.FromString,
-                _registered_method=True)
         self.goto = channel.unary_unary(
                 '/rover.RoverService/goto',
                 request_serializer=rover__pb2.GotoCommand.SerializeToString,
@@ -99,15 +89,20 @@ class RoverServiceStub(object):
                 request_serializer=rover__pb2.LedCustomCommand.SerializeToString,
                 response_deserializer=rover__pb2.CommandAck.FromString,
                 _registered_method=True)
+        self.beep = channel.unary_unary(
+                '/rover.RoverService/beep',
+                request_serializer=rover__pb2.Empty.SerializeToString,
+                response_deserializer=rover__pb2.CommandAck.FromString,
+                _registered_method=True)
+        self.moo = channel.unary_unary(
+                '/rover.RoverService/moo',
+                request_serializer=rover__pb2.Empty.SerializeToString,
+                response_deserializer=rover__pb2.CommandAck.FromString,
+                _registered_method=True)
         self.get_telemetry = channel.unary_unary(
                 '/rover.RoverService/get_telemetry',
                 request_serializer=rover__pb2.Empty.SerializeToString,
                 response_deserializer=rover__pb2.TelemetryData.FromString,
-                _registered_method=True)
-        self.get_voltage = channel.unary_unary(
-                '/rover.RoverService/get_voltage',
-                request_serializer=rover__pb2.Empty.SerializeToString,
-                response_deserializer=rover__pb2.BatteryData.FromString,
                 _registered_method=True)
         self.stream_telemetry = channel.unary_stream(
                 '/rover.RoverService/stream_telemetry',
@@ -118,6 +113,11 @@ class RoverServiceStub(object):
                 '/rover.RoverService/get_status',
                 request_serializer=rover__pb2.Empty.SerializeToString,
                 response_deserializer=rover__pb2.RoverStatus.FromString,
+                _registered_method=True)
+        self.get_battery_status = channel.unary_unary(
+                '/rover.RoverService/get_battery_status',
+                request_serializer=rover__pb2.Empty.SerializeToString,
+                response_deserializer=rover__pb2.BatteryData.FromString,
                 _registered_method=True)
         self.emergency_stop = channel.unary_unary(
                 '/rover.RoverService/emergency_stop',
@@ -160,18 +160,6 @@ class RoverServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def beep(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def moo(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
     def goto(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -209,15 +197,21 @@ class RoverServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def get_telemetry(self, request, context):
-        """Получение данных
-        """
+    def beep(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def get_voltage(self, request, context):
+    def moo(self, request, context):
         """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def get_telemetry(self, request, context):
+        """Получение данных
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -229,6 +223,12 @@ class RoverServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def get_status(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def get_battery_status(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -269,16 +269,6 @@ def add_RoverServiceServicer_to_server(servicer, server):
                     request_deserializer=rover__pb2.Empty.FromString,
                     response_serializer=rover__pb2.CommandAck.SerializeToString,
             ),
-            'beep': grpc.unary_unary_rpc_method_handler(
-                    servicer.beep,
-                    request_deserializer=rover__pb2.Empty.FromString,
-                    response_serializer=rover__pb2.CommandAck.SerializeToString,
-            ),
-            'moo': grpc.unary_unary_rpc_method_handler(
-                    servicer.moo,
-                    request_deserializer=rover__pb2.Empty.FromString,
-                    response_serializer=rover__pb2.CommandAck.SerializeToString,
-            ),
             'goto': grpc.unary_unary_rpc_method_handler(
                     servicer.goto,
                     request_deserializer=rover__pb2.GotoCommand.FromString,
@@ -309,15 +299,20 @@ def add_RoverServiceServicer_to_server(servicer, server):
                     request_deserializer=rover__pb2.LedCustomCommand.FromString,
                     response_serializer=rover__pb2.CommandAck.SerializeToString,
             ),
+            'beep': grpc.unary_unary_rpc_method_handler(
+                    servicer.beep,
+                    request_deserializer=rover__pb2.Empty.FromString,
+                    response_serializer=rover__pb2.CommandAck.SerializeToString,
+            ),
+            'moo': grpc.unary_unary_rpc_method_handler(
+                    servicer.moo,
+                    request_deserializer=rover__pb2.Empty.FromString,
+                    response_serializer=rover__pb2.CommandAck.SerializeToString,
+            ),
             'get_telemetry': grpc.unary_unary_rpc_method_handler(
                     servicer.get_telemetry,
                     request_deserializer=rover__pb2.Empty.FromString,
                     response_serializer=rover__pb2.TelemetryData.SerializeToString,
-            ),
-            'get_voltage': grpc.unary_unary_rpc_method_handler(
-                    servicer.get_voltage,
-                    request_deserializer=rover__pb2.Empty.FromString,
-                    response_serializer=rover__pb2.BatteryData.SerializeToString,
             ),
             'stream_telemetry': grpc.unary_stream_rpc_method_handler(
                     servicer.stream_telemetry,
@@ -328,6 +323,11 @@ def add_RoverServiceServicer_to_server(servicer, server):
                     servicer.get_status,
                     request_deserializer=rover__pb2.Empty.FromString,
                     response_serializer=rover__pb2.RoverStatus.SerializeToString,
+            ),
+            'get_battery_status': grpc.unary_unary_rpc_method_handler(
+                    servicer.get_battery_status,
+                    request_deserializer=rover__pb2.Empty.FromString,
+                    response_serializer=rover__pb2.BatteryData.SerializeToString,
             ),
             'emergency_stop': grpc.unary_unary_rpc_method_handler(
                     servicer.emergency_stop,
@@ -468,60 +468,6 @@ class RoverService(object):
             request,
             target,
             '/rover.RoverService/stop',
-            rover__pb2.Empty.SerializeToString,
-            rover__pb2.CommandAck.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def beep(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/rover.RoverService/beep',
-            rover__pb2.Empty.SerializeToString,
-            rover__pb2.CommandAck.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def moo(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/rover.RoverService/moo',
             rover__pb2.Empty.SerializeToString,
             rover__pb2.CommandAck.FromString,
             options,
@@ -697,6 +643,60 @@ class RoverService(object):
             _registered_method=True)
 
     @staticmethod
+    def beep(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/rover.RoverService/beep',
+            rover__pb2.Empty.SerializeToString,
+            rover__pb2.CommandAck.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def moo(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/rover.RoverService/moo',
+            rover__pb2.Empty.SerializeToString,
+            rover__pb2.CommandAck.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def get_telemetry(request,
             target,
             options=(),
@@ -713,33 +713,6 @@ class RoverService(object):
             '/rover.RoverService/get_telemetry',
             rover__pb2.Empty.SerializeToString,
             rover__pb2.TelemetryData.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def get_voltage(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/rover.RoverService/get_voltage',
-            rover__pb2.Empty.SerializeToString,
-            rover__pb2.BatteryData.FromString,
             options,
             channel_credentials,
             insecure,
@@ -794,6 +767,33 @@ class RoverService(object):
             '/rover.RoverService/get_status',
             rover__pb2.Empty.SerializeToString,
             rover__pb2.RoverStatus.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def get_battery_status(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/rover.RoverService/get_battery_status',
+            rover__pb2.Empty.SerializeToString,
+            rover__pb2.BatteryData.FromString,
             options,
             channel_credentials,
             insecure,

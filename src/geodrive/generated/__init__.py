@@ -1,31 +1,33 @@
 from .rover_pb2 import (
-    VelocityCommand,
     DifferentialCommand,
-    LedCommand,
-    LedCustomCommand,
-    CommandAck,
-    Empty,
-    TelemetryData,
     RCChannelsCommand,
+    LedCustomCommand,
+    VelocityCommand,
+    TelemetryData,
+    GotoProgress,
+    RoverStatus,
     BatteryData,
     GotoCommand,
+    LedCommand,
+    CommandAck,
     GotoAck,
-    GotoProgress
+    Empty
 )
 from .rover_pb2_grpc import RoverServiceStub
 
 __all__ = [
     "RoverServiceStub",
-    "CommandAck",
-    "LedCommand",
-    "LedCustomCommand",
     "DifferentialCommand",
-    "VelocityCommand",
-    "Empty",
-    "TelemetryData",
     "RCChannelsCommand",
+    "LedCustomCommand",
+    "VelocityCommand",
+    "TelemetryData",
+    "GotoProgress",
+    "RoverStatus",
     "BatteryData",
-    "GotoAck",
     "GotoCommand",
-    "GotoProgress"
+    "LedCommand",
+    "CommandAck",
+    "GotoAck",
+    "Empty"
 ]

@@ -115,10 +115,12 @@ class RoverStatus(_message.Message):
     def __init__(self, is_connected: bool = ..., mode: _Optional[str] = ..., state: _Optional[str] = ..., uptime: _Optional[int] = ..., firmware_version: _Optional[str] = ..., errors: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class BatteryData(_message.Message):
-    __slots__ = ("battery_voltage",)
-    BATTERY_VOLTAGE_FIELD_NUMBER: _ClassVar[int]
-    battery_voltage: float
-    def __init__(self, battery_voltage: _Optional[float] = ...) -> None: ...
+    __slots__ = ("voltage", "percentage")
+    VOLTAGE_FIELD_NUMBER: _ClassVar[int]
+    PERCENTAGE_FIELD_NUMBER: _ClassVar[int]
+    voltage: float
+    percentage: int
+    def __init__(self, voltage: _Optional[float] = ..., percentage: _Optional[int] = ...) -> None: ...
 
 class CommandAck(_message.Message):
     __slots__ = ("success", "message", "error_code")
