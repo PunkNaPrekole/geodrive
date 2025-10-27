@@ -1,0 +1,139 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rover Control Panel</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/control.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">GEODRIVE</div>
+            <div class="subtitle">Панель управления ровером</div>
+        </div>
+        
+        <div class="connection-panel">
+            <div id="connectionStatus" class="status disconnected">
+                Ожидание подключения
+            </div>
+        </div>
+
+        <div class="map-panel">
+            <div class="map-title">КАРТА ПОЗИЦИИ (11×11м)</div>
+            <div class="map-container" id="mapContainer">
+                <div class="robot-marker" id="robotMarker">
+                    <div class="robot-direction" id="robotDirection"></div>
+                </div>
+                <div class="coordinates" id="coordinates">X: 0.00 Y: 0.00</div>
+            </div>
+        </div>
+
+        <div class="battery-panel">
+            <div class="battery-title">СОСТОЯНИЕ БАТАРЕИ</div>
+            <div class="battery-container">
+                <div class="battery-icon">
+                    <div class="battery-level" id="batteryLevel"></div>
+                </div>
+                <div class="battery-info">
+                    <div class="battery-percentage" id="batteryPercentage">0%</div>
+                    <div class="battery-status" id="batteryStatus">Не подключено</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="telemetry-panel">
+            <div class="telemetry-title">ТЕЛЕМЕТРИЯ РОБОТА</div>
+            <div class="telemetry-grid">
+                <div class="telemetry-item">
+                    <div class="telemetry-name">Позиция X</div>
+                    <div id="posX" class="telemetry-value">0.00 м</div>
+                </div>
+                <div class="telemetry-item">
+                    <div class="telemetry-name">Позиция Y</div>
+                    <div id="posY" class="telemetry-value">0.00 м</div>
+                </div>
+                <div class="telemetry-item">
+                    <div class="telemetry-name">Скорость X</div>
+                    <div id="velX" class="telemetry-value">0.00 м/с</div>
+                </div>
+                <div class="telemetry-item">
+                    <div class="telemetry-name">Скорость Y</div>
+                    <div id="velY" class="telemetry-value">0.00 м/с</div>
+                </div>
+                <div class="telemetry-item">
+                    <div class="telemetry-name">Курс (Yaw)</div>
+                    <div id="yaw" class="telemetry-value">0.00°</div>
+                </div>
+                <div class="telemetry-item">
+                    <div class="telemetry-name">Скорость</div>
+                    <div id="speed" class="telemetry-value">0.00 м/с</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="activeCommands" class="active-commands">
+            Активные команды: <span id="commandsList"></span>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn btn-forward" onmousedown="startCommand('forward')" onmouseup="stopCommand('forward')" ontouchstart="startCommand('forward')" touchend="stopCommand('forward')">
+                <div class="key">W</div>
+                <div class="label">Вперед</div>
+            </button>
+            <button class="control-btn btn-left" onmousedown="startCommand('left')" onmouseup="stopCommand('left')" ontouchstart="startCommand('left')" touchend="stopCommand('left')">
+                <div class="key">A</div>
+                <div class="label">Влево</div>
+            </button>
+            <button class="control-btn btn-stop" onclick="sendStop()">
+                <div class="key">Space</div>
+                <div class="label">Стоп</div>
+            </button>
+            <button class="control-btn btn-right" onmousedown="startCommand('right')" onmouseup="stopCommand('right')" ontouchstart="startCommand('right')" touchend="stopCommand('right')">
+                <div class="key">D</div>
+                <div class="label">Вправо</div>
+            </button>
+            <button class="control-btn btn-backward" onmousedown="startCommand('backward')" onmouseup="stopCommand('backward')" ontouchstart="startCommand('backward')" touchend="stopCommand('backward')">
+                <div class="key">S</div>
+                <div class="label">Назад</div>
+            </button>
+        </div>
+
+        <div class="sound-controls">
+            <button class="control-btn btn-moo" onclick="sendMoo()">
+                <div class="key">M</div>
+                <div class="label">Moo Sound</div>
+            </button>
+            <button class="control-btn btn-beep" onclick="sendBeep()">
+                <div class="key">B</div>
+                <div class="label">Beep Sound</div>
+            </button>
+        </div>
+
+        <div class="channels-display">
+            <div class="channels-title">КАНАЛЫ УПРАВЛЕНИЯ</div>
+            <div class="channels-grid">
+                <div class="channel">
+                    <div class="channel-name">Throttle</div>
+                    <div id="channel1" class="channel-value">1500</div>
+                </div>
+                <div class="channel">
+                    <div class="channel-name">Steering</div>
+                    <div id="channel2" class="channel-value">1500</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <p>Управление: <span class="key-hint">W</span> <span class="key-hint">A</span> <span class="key-hint">S</span> <span class="key-hint">D</span></p>
+            <p>Звуки: <span class="key-hint">M</span> - Moo, <span class="key-hint">B</span> - Beep • Пробел - Стоп</p>
+        </div>
+
+        <div class="geodrive-badge">
+            GEODRIVE CONTROL PANEL v0.0.1
+        </div>
+    </div>
+</body>
+</html>
