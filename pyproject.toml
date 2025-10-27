@@ -1,6 +1,6 @@
 [project]
 name = "geodrive"
-version = "0.0.3"
+version = "0.0.4"
 description = "Universal SDK for rover programming"
 readme = "README.md"
 license = {text = "MIT"}
@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "grpcio>=1.75.1",
-    "protobuf>=6.32.1",
+    "protobuf>=5.29.3",
     "structlog>=25.4.0",
 ]
 
@@ -37,8 +37,12 @@ build-backend = "uv_build"
 
 [project.optional-dependencies]
 ws-control = [
+    "aiohttp>=3.13.1",
     "websockets>=15.0.1",
 ]
+
+[project.scripts]
+ws-control = "web_ui.websocket_control:main"
 
 [dependency-groups]
 dev = [
