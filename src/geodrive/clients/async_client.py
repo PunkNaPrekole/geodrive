@@ -3,6 +3,7 @@ from typing import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from ..commands import RoverCommands
+from ..exceptions import RoverAckError
 from ..generated import RCChannelsCommand, CommandAck, TelemetryData, BatteryData
 from ..communicators import AsyncGRPCCommunicator
 from ..logging import get_logger
@@ -254,10 +255,12 @@ class AsyncRoverClient:
 
             async for ack in self._communicator.stub.stream_rc_channels(generate_commands()):
                 if not ack.success:
-                    raise RuntimeError(f"RC command failed: {ack.message}")
+                    raise RoverAckError(f"RC command failed: {ack.message}")
 
         except asyncio.CancelledError:
-            raise RuntimeError("RC stream cancelled")
+            self._logger.debug("RC stream cancelled")
+        except RoverAckError as e:
+            self._logger.error(f"Rover ack error: {e}")
         except Exception as e:
             raise RuntimeError(f"RC stream error: {e}")
 
