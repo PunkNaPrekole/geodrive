@@ -25,15 +25,18 @@ pip install 'geodrive[ws-control]'
 uv add geodrive[ws-control]
 """
 
-async def create_http_app():
+async def create_http_app(video: bool):
     """
     Создает web приложение для обслуживания панели управления
     """
     app = web.Application()
+    panel_file = 'control_panel.html'
+    if video:
+        panel_file = 'video_control_panel.html'
 
     async def control_panel(request):
         script_dir = Path(__file__).parent
-        html_file = script_dir / 'html' / 'control_panel.html'
+        html_file = script_dir / 'html' / panel_file
         if html_file.exists():
             try:
                 html_content = html_file.read_text(encoding='utf-8')
@@ -46,7 +49,7 @@ async def create_http_app():
             return web.Response(text=html_content, content_type='text/html')
         else:
             return web.Response(
-                text="<h1>Файл control_panel.html не найден</h1>",
+                text=f"<h1>Файл {panel_file} не найден</h1>",
                 content_type='text/html',
                 status=404
             )
@@ -70,7 +73,7 @@ async def create_http_app():
     return app
 
 
-async def forward_websocket_to_rover(rover_number: int, local: bool):
+async def forward_websocket_to_rover(rover_number: int, local: bool, arena: int):
 
     if local:
         rover_ip = "localhost"
@@ -88,6 +91,13 @@ async def forward_websocket_to_rover(rover_number: int, local: bool):
 
     async def handle_websocket(websocket):
 
+        initial_data = {
+            "type": "config",
+            "arena_size": arena
+        }
+
+        await websocket.send(json.dumps(initial_data))
+
         async with rover.rc_stream_context() as rc_control:
 
             async def send_robot_data():
@@ -96,6 +106,7 @@ async def forward_websocket_to_rover(rover_number: int, local: bool):
                         async for telemetry in rover.stream_telemetry():
                             battery_data = await rover.get_battery_status()
                             robot_data = {
+                                "type": "telemetry",
                                 "posX": telemetry.position[0],
                                 "posY": telemetry.position[1],
                                 "velX": telemetry.velocity[0],
@@ -123,7 +134,7 @@ async def forward_websocket_to_rover(rover_number: int, local: bool):
                         rc_control.channel2 = data.get('channel2', 1500)
                         rc_control.channel3 = data.get('channel3', 1500)
                         rc_control.channel4 = data.get('channel4', 1500)
-                        if rc_control.channel3 == 1000:
+                        if rc_control.channel2 == 1000:
                             await rover.moo()
                         if rc_control.channel4 == 1000:
                             await rover.beep()
@@ -147,20 +158,23 @@ async def forward_websocket_to_rover(rover_number: int, local: bool):
     async with websockets.serve(handle_websocket, "0.0.0.0", 8765):
         await asyncio.Future()
 
-async def run(rover_num: int, local: bool):
-    app = await create_http_app()
+async def run(rover_num: int, local: bool, arena: int, video: bool):
+    app = await create_http_app(video)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, '0.0.0.0', 8080)
     await site.start()
     logger.info(f"Панель управления доступна по адресу: http://localhost:8080")
-    await forward_websocket_to_rover(rover_num, local)
+    await forward_websocket_to_rover(rover_num, local, arena)
 
 def main():
     parser = argparse.ArgumentParser(description="Websocket сервер для ручного управления роботом")
     parser.add_argument("num", type=int, nargs='?', default=160)
-    parser.add_argument("-local", "--local", action="store_true",
+    parser.add_argument("-l", "--local", action="store_true",
                         help="Подключение к локальному серверу (localhost) вместо реального ровера")
+    parser.add_argument("-v", "--video", action="store_true", help="Панель управления с видео")
+    parser.add_argument("-a", "--arena", type=int, default=11, help="Размер арены (по умолчанию: 11)")
+
     args = parser.parse_args()
 
     if not (0 <= args.num <= 255):
@@ -172,7 +186,7 @@ def main():
         sys.exit(1)
 
     try:
-        asyncio.run(run(args.num, args.local))
+        asyncio.run(run(args.num, args.local, args.arena, args.video))
     except KeyboardInterrupt:
         logger.info("Сервер остановлен")
     except Exception as e:
