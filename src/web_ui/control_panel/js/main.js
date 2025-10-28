@@ -1,7 +1,6 @@
 import { WebSocketManager } from './websocket.js';
 import { ControlsManager } from './control.js';
 import { MapManager } from './map.js';
-import { TelemetryManager } from './telemetry.js';
 import { Configurator } from './configurator.js';
 
 class GeodriveControlPanel {
@@ -14,7 +13,6 @@ class GeodriveControlPanel {
         this.modules.websocket = new WebSocketManager();
         this.modules.controls = new ControlsManager();
         this.modules.map = new MapManager();
-        this.modules.telemetry = new TelemetryManager();
         this.modules.configurator = new Configurator();
 
         this.setupModuleConnections();
@@ -36,7 +34,6 @@ class GeodriveControlPanel {
             }
 
             if (data.type === 'telemetry') {
-                this.modules.telemetry.updateData(data);
                 this.modules.map.updatePosition(data);
             }
         });

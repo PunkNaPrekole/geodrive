@@ -2,6 +2,7 @@ export class MapManager {
     constructor() {
         this.currentPosition = { x: 0, y: 0, yaw: 0 };
         this.currentVelocity = { vx: 0, vy: 0};
+        this.batteryData = 0
         this.arenaSize = 11;
     }
 
@@ -46,6 +47,23 @@ export class MapManager {
         mapContainer.appendChild(centerH);
     }
 
+    updateBatteryDisplay() {
+        const batteryLevel = document.getElementById('batteryLevel');
+
+        const batteryPercent = this.batteryData;
+        batteryLevel.style.width = `${batteryPercent}%`;
+
+        if (batteryPercent > 85) {
+            batteryLevel.style.background = 'linear-gradient(90deg, #2ed573, #7bed9f)';
+        } else if (batteryPercent > 70) {
+            batteryLevel.style.background = 'linear-gradient(90deg, #ffa502, #ffb142)';
+        } else if (batteryPercent > 55) {
+            batteryLevel.style.background = 'linear-gradient(90deg, #ff4757, #ff6b81)';
+        } else {
+            batteryLevel.style.background = 'linear-gradient(90deg, #2f3542, #57606f)';
+        }
+    }
+
     updatePosition(data) {
         if (data.posX !== undefined) this.currentPosition.x = data.posX;
         if (data.posY !== undefined) this.currentPosition.y = data.posY;
@@ -53,9 +71,11 @@ export class MapManager {
 
         if (data.velX !== undefined) this.currentVelocity.vx = data.velX;
         if (data.velY !== undefined) this.currentVelocity.vy = data.velY;
+        if (data.battery !== undefined) this.batteryData = data.battery;
 
         this.updateRobotMarker();
         this.updateCoordinatesDisplay();
+        this.updateBatteryDisplay();
     }
 
     updateRobotMarker() {
