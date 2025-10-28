@@ -31,12 +31,14 @@ async def create_http_app(video: bool):
     """
     app = web.Application()
     panel_file = 'control_panel.html'
+    panel_dir = 'control_panel'
     if video:
         panel_file = 'video_control_panel.html'
+        panel_dir = 'game'
 
     async def control_panel(request):
         script_dir = Path(__file__).parent
-        html_file = script_dir / 'html' / panel_file
+        html_file = script_dir / panel_dir / panel_file
         if html_file.exists():
             try:
                 html_content = html_file.read_text(encoding='utf-8')
@@ -55,12 +57,33 @@ async def create_http_app(video: bool):
             )
 
     async def serve_static(request):
+        source = request.match_info['source']
+        if source == 'css':
+            return await serve_css(request)
+        elif source == 'js':
+            return await serve_js(request)
+        return web.Response(status=404)
+
+
+    async def serve_css(request):
         filename = request.match_info['filename']
         script_dir = Path(__file__).parent
-        static_file = script_dir / 'html' / filename
+        static_file = script_dir / panel_dir / 'css' / filename
 
-        if static_file.exists() and static_file.suffix in ['.css', '.js']:
-            content_type = 'text/css' if static_file.suffix == '.css' else 'application/javascript'
+        if static_file.exists() and static_file.suffix == '.css':
+            content_type = 'text/css'
+            content = static_file.read_text(encoding='utf-8')
+            return web.Response(text=content, content_type=content_type)
+
+        return web.Response(status=404)
+
+    async def serve_js(request):
+        filename = request.match_info['filename']
+        script_dir = Path(__file__).parent
+        static_file = script_dir / panel_dir / 'js' / filename
+
+        if static_file.exists() and static_file.suffix == '.js':
+            content_type = 'application/javascript'
             content = static_file.read_text(encoding='utf-8')
             return web.Response(text=content, content_type=content_type)
 
@@ -68,7 +91,7 @@ async def create_http_app(video: bool):
 
     app.router.add_get('/', control_panel)
     app.router.add_get('/control', control_panel)
-    app.router.add_get('/static/{filename}', serve_static)
+    app.router.add_get('/static/{source}/{filename}', serve_static)
 
     return app
 
@@ -170,6 +193,7 @@ async def run(rover_num: int, local: bool, arena: int, video: bool):
 def main():
     parser = argparse.ArgumentParser(description="Websocket сервер для ручного управления роботом")
     parser.add_argument("num", type=int, nargs='?', default=160)
+    parser.add_argument("-ip", type=str, default="10.1.100.160")
     parser.add_argument("-l", "--local", action="store_true",
                         help="Подключение к локальному серверу (localhost) вместо реального ровера")
     parser.add_argument("-v", "--video", action="store_true", help="Панель управления с видео")

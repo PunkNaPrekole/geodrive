@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rover Control Panel</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script type="module" src="/static/js/main.js"></script>
+</head>
+<body>
+    <!-- Основной контейнер -->
+    <div class="ar-container">
+        
+        <!-- Левая панель - карта -->
+        <div class="map-section">
+            <div class="map-container" id="mapContainer">
+                <div class="robot-marker" id="robotMarker">
+                    <div class="robot-direction" id="robotDirection"></div>
+                </div>
+                
+                <div class="battery-container">
+                    <div class="battery-icon">
+                        <div class="battery-level" id="batteryLevel"></div>
+                    </div>
+
+                </div>
+                <div class="coordinates" id="coordinates">X: 0.00 Y: 0.00 YAW: 0.00</div>
+                <div class="velocities" id="velocities">VX: 0.00 VY: 0.00</div>
+                <div class="map-overlay">
+                    <div class="map-title">ARENA MAP 11×11</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая панель - управление -->
+        <div class="control-section">
+            
+            <!-- Заголовок и статус -->
+            <div class="header-panel">
+                <div class="logo">GEODRIVE</div>
+                <div class="subtitle">ROVER CONTROL SYSTEM</div>
+                <div id="connectionStatus" class="status disconnected">
+                    Ожидание подключения
+                </div>
+            </div>
+
+            <!-- Конфигурация -->
+            <div class="config-panel">
+                <div class="config-console" id="configConsole">
+                    <div class="console-header">ЛОГ СОБЫТИЙ</div>
+                    <div class="console-content"></div>
+                </div>
+                <div class="config-header">
+                    <span>КОНФИГУРАЦИЯ РОВЕРА</span>
+                    <div class="config-controls">
+                        <button class="config-btn" id="refreshConfig">🔄 Обновить</button>
+                        <button class="config-btn" id="saveConfig">💾 Сохранить</button>
+                        <button class="config-btn" id="applyConfig">⚡ Применить</button>
+                        <button class="config-btn" id="loadConfig">📁 Загрузить</button>
+                    </div>
+                </div>
+
+                <div class="config-status">
+                    <span class="api-endpoint" id="apiEndpoint">API: Загрузка...</span>
+                    <span class="config-version" id="configVersion">Версия: ?</span>
+                </div>
+
+                <!-- Автогенерируемые секции -->
+                <div class="config-sections" id="configSections">
+                    <div class="loading-config">Загрузка конфигурации...</div>
+                </div>
+            </div>
+            <!-- Инструкции -->
+            <div class="instructions">
+                <p>Управление: <span class="key-hint">W</span> <span class="key-hint">A</span> <span class="key-hint">S</span> <span class="key-hint">D</span>
+                   | Звуки: <span class="key-hint">M</span> <span class="key-hint">B</span> | Стоп: <span class="key-hint">Space</span></p>
+            </div>
+
+        </div>
+
+    </div>
+</body>
+</html>
