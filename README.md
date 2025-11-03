@@ -8,7 +8,7 @@
 
 <p align="center">
 <a href="https://github.com/PunkNaPrekole/geodrive/actions" target="_blank">
-    <img src="https://github.com/PunkNaPrekole/geodrive/actions/workflows/test.yml/badge.svg" alt="Tests">
+    <img src="https://github.com/PunkNaPrekole/geodrive/actions/workflows/tests.yml/badge.svg" alt="Tests">
 </a>
 <a href="https://pypi.org/project/geodrive" target="_blank">
     <img src="https://img.shields.io/pypi/v/geodrive?color=%2334D058&label=pypi%20package" alt="Package version">
