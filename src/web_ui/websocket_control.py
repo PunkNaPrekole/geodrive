@@ -89,8 +89,19 @@ async def create_http_app(video: bool):
 
         return web.Response(status=404)
 
+    async def serve_favicon(request):
+        """Обслуживание favicon.ico"""
+        script_dir = Path(__file__).parent
+        favicon_file = script_dir / 'favicon.ico'
+
+        if favicon_file.exists():
+            return web.FileResponse(favicon_file)
+        else:
+            return web.Response(status=404)
+
     app.router.add_get('/', control_panel)
     app.router.add_get('/control', control_panel)
+    app.router.add_get('/favicon.ico', serve_favicon)
     app.router.add_get('/static/{source}/{filename}', serve_static)
 
     return app
