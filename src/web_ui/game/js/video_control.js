@@ -1,7 +1,20 @@
+window.ControlManager = {
+    init: function() {
+        initMap();
+        connect();
+    },
+
+    toggleConnection: toggleConnection,
+    sendMoo: sendMoo,
+    sendBeep: sendBeep,
+    startCommand: startCommand,
+    stopCommand: stopCommand
+};
 let ws = null;
 let isConnected = false;
 let activeCommands = new Set();
 let commandInterval = null;
+let arenaSize = 11;
 
 // Данные телеметрии
 let telemetryData = {
@@ -17,54 +30,75 @@ let telemetryData = {
 // Инициализация карты
 function initMap() {
     const mapContainer = document.getElementById('mapContainer');
-    const size = 11;
+    updateGrid();
+}
 
-    // Создание сетки
+
+function updateGrid() {
+    const mapContainer = document.getElementById('mapContainer');
+
+    // Очищаем старую сетку
+    const oldLines = mapContainer.querySelectorAll('.grid-line');
+    oldLines.forEach(line => line.remove());
+
+    const size = arenaSize;
+    const step = size / 10;
+    const halfSize = arenaSize / 2;
+
+    // Создаем сетку
     for (let i = -5; i <= 5; i++) {
+    const position = i * step;
         // Вертикальные линии
         const vLine = document.createElement('div');
         vLine.className = 'grid-line vertical';
-        vLine.style.left = `${50 + (i / 5) * 50}%`;
+        vLine.style.left = `${50 + (position / halfSize) * 50}%`;
         mapContainer.appendChild(vLine);
+
         // Горизонтальные линии
         const hLine = document.createElement('div');
         hLine.className = 'grid-line horizontal';
-        hLine.style.top = `${50 + (i / 5) * 50}%`;
+        hLine.style.top = `${50 + (position / halfSize) * 50}%`;
         mapContainer.appendChild(hLine);
     }
 
-    // Центральные оси
+    // Центральные оси (жирнее)
     const centerV = document.createElement('div');
     centerV.className = 'grid-line vertical';
     centerV.style.left = '50%';
-    centerV.style.background = 'rgba(255, 255, 255, 0.3)';
+    centerV.style.background = 'rgba(255, 126, 0, 0.3)';
     mapContainer.appendChild(centerV);
 
     const centerH = document.createElement('div');
     centerH.className = 'grid-line horizontal';
     centerH.style.top = '50%';
-    centerH.style.background = 'rgba(255, 255, 255, 0.3)';
+    centerH.style.background = 'rgba(255, 126, 0, 0.3)';
     mapContainer.appendChild(centerH);
 }
 
 // Обновление позиции на карте
 function updateMapPosition() {
-    const robotMarker = document.getElementById('robotMarker');
-    const robotDirection = document.getElementById('robotDirection');
+    const robotSprite = document.getElementById('robotSprite');
     const coordinates = document.getElementById('coordinates');
 
-    // Масштабирование координат из [-5.5, 5.5] в [0%, 100%]
-    const xPercent = 50 + (telemetryData.posX / 5.5) * 50;
-    const yPercent = 50 - (telemetryData.posY / 5.5) * 50;
+    const halfSize = arenaSize / 2;
 
-    robotMarker.style.left = `${Math.max(0, Math.min(100, xPercent))}%`;
-    robotMarker.style.top = `${Math.max(0, Math.min(100, yPercent))}%`;
+    // Масштабируем координаты из [-halfSize, halfSize] в [0%, 100%]
+    const xPercent = 50 + (telemetryData.posX / halfSize) * 50;
+    const yPercent = 50 - (telemetryData.posY / halfSize) * 50;
 
-    // Конвертация радиан в градусы
+    robotSprite.style.left = `${Math.max(0, Math.min(100, xPercent))}%`;
+    robotSprite.style.top = `${Math.max(0, Math.min(100, yPercent))}%`;
+
     const yawDegrees = -telemetryData.yaw * (180 / Math.PI) + 90;
-    robotDirection.style.transform = `translateX(-50%) rotate(${yawDegrees}deg)`;
+    robotSprite.style.transform = `translate(-50%, -50%) rotate(${yawDegrees}deg)`;
 
-    // Обновление координат
+    if (telemetryData.speed > 0.1) {
+        robotSprite.classList.add('moving');
+    } else {
+        robotSprite.classList.remove('moving');
+    }
+
+    // Обновляем координаты
     coordinates.textContent = `X: ${telemetryData.posX.toFixed(2)} Y: ${telemetryData.posY.toFixed(2)}`;
 }
 
@@ -103,40 +137,47 @@ function toggleConnection() {
 }
 
 function connect() {
-    const address = 'ws://localhost:8765';
+    const address = "ws://localhost:8765";
+
     try {
         ws = new WebSocket(address);
 
         ws.onopen = () => {
             isConnected = true;
-            updateStatus('Подключено к серверу', true);
             console.log('WebSocket подключен');
         };
 
         ws.onclose = () => {
             isConnected = false;
-            updateStatus('Соединение разорвано', false);
             console.log('WebSocket отключен');
             stopSending();
         };
 
         ws.onerror = (error) => {
             console.error('WebSocket ошибка:', error);
-            updateStatus('Ошибка подключения', false);
         };
 
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                processTelemetryData(data);
+
+                if (data.type === "telemetry") {
+                    processTelemetryData(data);
+                }
+                if (data.type === "config") {
+                    arenaSize = data.arena_size;
+                    const roverIdElement = document.getElementById('rover-id');
+                    roverIdElement.textContent = data.rover_id
+                    updateGrid();
+                }
             } catch (error) {
+                console.error('Ошибка парсинга JSON:', error);
                 console.log('Получено сообщение:', event.data);
             }
         };
 
     } catch (error) {
         alert('Ошибка подключения: ' + error.message);
-        updateConnectButton(false);
     }
 }
 
@@ -175,9 +216,7 @@ function disconnect() {
         ws = null;
     }
     isConnected = false;
-    updateStatus('Отключено вручную', false);
     stopSending();
-    resetChannels();
     activeCommands.clear();
     updateActiveCommandsDisplay();
 
@@ -186,12 +225,6 @@ function disconnect() {
     updateTelemetryDisplay();
     updateMapPosition();
     updateBatteryDisplay();
-}
-
-function updateStatus(message, connected) {
-    const statusElement = document.getElementById('connectionStatus');
-    statusElement.textContent = message;
-    statusElement.className = `status ${connected ? 'connected' : 'disconnected'}`;
 }
 
 function startCommand(command) {
@@ -235,8 +268,8 @@ function sendCombinedCommand() {
 
     const channels = {
         channel1: 1500, // Steering
-        channel2: 1500, // Throttle
-        channel3: 1500, // Moo command
+        channel2: 1500, // Moo command
+        channel3: 1500, // Throttle
         channel4: 1500  // Beep command
     };
 
@@ -258,7 +291,6 @@ function sendCombinedCommand() {
     });
 
     ws.send(JSON.stringify(channels));
-    updateChannelsDisplay(channels);
     console.log('Отправлено:', channels, 'Активные команды:', Array.from(activeCommands));
 }
 
@@ -273,7 +305,6 @@ function sendStop() {
     };
 
     ws.send(JSON.stringify(channels));
-    updateChannelsDisplay(channels);
     console.log('Остановка');
 }
 
@@ -282,20 +313,18 @@ function sendMoo() {
 
     const channels = {
         channel1: 1500,
-        channel2: 1500,
-        channel3: 1000, // Moo command
+        channel2: 1000, // Moo command
+        channel3: 1500,
         channel4: 1500
     };
 
     ws.send(JSON.stringify(channels));
-    updateChannelsDisplay(channels);
     console.log('Moo command sent');
 
     setTimeout(() => {
-        channels.channel3 = 1500;
+        channels.channel2 = 1500;
         if (isConnected && ws) {
             ws.send(JSON.stringify(channels));
-            updateChannelsDisplay(channels);
         }
     }, 500);
 }
@@ -311,21 +340,14 @@ function sendBeep() {
     };
 
     ws.send(JSON.stringify(channels));
-    updateChannelsDisplay(channels);
     console.log('Beep command sent');
 
     setTimeout(() => {
         channels.channel4 = 1500;
         if (isConnected && ws) {
             ws.send(JSON.stringify(channels));
-            updateChannelsDisplay(channels);
         }
     }, 500);
-}
-
-function updateChannelsDisplay(channels) {
-    document.getElementById('channel1').textContent = channels.channel1;
-    document.getElementById('channel2').textContent = channels.channel2;
 }
 
 function updateActiveCommandsDisplay() {
@@ -347,15 +369,6 @@ function updateActiveCommandsDisplay() {
     } else {
         activeCommandsElement.style.display = 'none';
     }
-}
-
-function resetChannels() {
-    updateChannelsDisplay({
-        channel1: 1500,
-        channel2: 1500,
-        channel3: 1500,
-        channel4: 1500
-    });
 }
 
 // Обработка клавиатуры
@@ -406,15 +419,4 @@ document.addEventListener('keyup', (e) => {
         stopCommand(command);
         e.preventDefault();
     }
-});
-
-// Предотвращаем контекстное меню на кнопках
-document.querySelectorAll('.control-btn').forEach(btn => {
-    btn.addEventListener('contextmenu', (e) => e.preventDefault());
-});
-
-// Инициализация при загрузке
-window.addEventListener('load', () => {
-    initMap();
-    connect();
 });
