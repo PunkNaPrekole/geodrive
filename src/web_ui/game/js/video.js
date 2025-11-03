@@ -170,12 +170,13 @@ const websocket_server_connect = () => {
     var ws_url = ws_server
     console.log(`Попытка подключения к WebSocket WebRTC серверу ${ws_url}`);
     ws_conn = new WebSocket(ws_url);
-
+    const roverIdElement = document.getElementById('rover-id');
+    const rover_id = roverIdElement.textContent
     ws_conn.onopen = () => {
         console.log("Выполнено подключение к серверу");
         reset_video();
         ws_conn.send(`HELLO ${peer_id}`);
-        ws_conn.send(`SESSION ${"1"}`); // Используем фиксированный ID видео
+        ws_conn.send(`SESSION ${rover_id}`);
     };
     ws_conn.onerror = on_server_error;
     ws_conn.onmessage = on_server_message;

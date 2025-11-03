@@ -116,6 +116,7 @@ async def forward_websocket_to_rover(rover_number: int, local: bool, arena: int)
 
         initial_data = {
             "type": "config",
+            "rover_id": rover_number,
             "arena_size": arena
         }
 
@@ -152,17 +153,20 @@ async def forward_websocket_to_rover(rover_number: int, local: bool, arena: int)
                 async for message in websocket:
                     try:
                         data = json.loads(message)
+                        if data.get("type", "rc_channels") == "navigate_to_point":
+                            await asyncio.create_task(rover.goto(data.get("target_x"), data.get("target_y")))
+                            logger.debug(f"Следование в точку: {data.get("target_x"), data.get("target_y")}")
+                        else:
+                            rc_control.channel1 = data.get('channel1', 1500)
+                            rc_control.channel2 = data.get('channel2', 1500)
+                            rc_control.channel3 = data.get('channel3', 1500)
+                            rc_control.channel4 = data.get('channel4', 1500)
+                            if rc_control.channel2 == 1000:
+                                await rover.moo()
+                            if rc_control.channel4 == 1000:
+                                await rover.beep()
 
-                        rc_control.channel1 = data.get('channel1', 1500)
-                        rc_control.channel2 = data.get('channel2', 1500)
-                        rc_control.channel3 = data.get('channel3', 1500)
-                        rc_control.channel4 = data.get('channel4', 1500)
-                        if rc_control.channel2 == 1000:
-                            await rover.moo()
-                        if rc_control.channel4 == 1000:
-                            await rover.beep()
-
-                        logger.debug(f"Каналы: {data}")
+                            logger.debug(f"Каналы: {data}")
 
                     except json.JSONDecodeError:
                         logger.warning(f"Невалидный JSON: {message}")

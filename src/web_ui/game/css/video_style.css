@@ -492,6 +492,46 @@ body {
     border: 1px solid rgba(255, 126, 0, 0.5);
 }
 
+.rover-id {
+    position: absolute;
+    bottom: 20px;
+    right: 10px;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-align: center;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 126, 0, 0.5);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.rover-id:hover {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 126, 0, 0.8);
+    box-shadow: 0 0 10px rgba(255, 126, 0, 0.3);
+}
+
+.id-hint {
+    display: inline-block;
+    background: #ff7e00;
+    color: white;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+    margin: 0 2px;
+    font-weight: 700;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.id-hint:hover {
+    background: #ff9a3c;
+    box-shadow: 0 0 8px rgba(255, 126, 0, 0.5);
+}
+
 .keyboard-hints p {
     color: white;
     font-size: 0.75em;
@@ -507,7 +547,7 @@ body {
     font-family: monospace;
     margin: 0 2px;
     font-weight: 700;
-    font-size: 0.8em;
+    font-size: 1.2em;
 }
 
 /* Логотип */

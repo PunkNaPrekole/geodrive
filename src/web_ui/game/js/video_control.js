@@ -113,13 +113,13 @@ function updateBatteryDisplay() {
     batteryPercentage.textContent = `${batteryPercent}%`;
 
     // Меняем цвет в зависимости от уровня заряда
-    if (batteryPercent > 60) {
+    if (batteryPercent > 85) {
         batteryLevel.style.background = 'linear-gradient(90deg, #2ed573, #7bed9f)';
         batteryStatus.textContent = 'Отличное состояние';
-    } else if (batteryPercent > 30) {
+    } else if (batteryPercent > 70) {
         batteryLevel.style.background = 'linear-gradient(90deg, #ffa502, #ffb142)';
         batteryStatus.textContent = 'Средний заряд';
-    } else if (batteryPercent > 15) {
+    } else if (batteryPercent > 55) {
         batteryLevel.style.background = 'linear-gradient(90deg, #ff4757, #ff6b81)';
         batteryStatus.textContent = 'Низкий заряд';
     } else {
@@ -166,6 +166,8 @@ function connect() {
                 }
                 if (data.type === "config") {
                     arenaSize = data.arena_size;
+                    const roverIdElement = document.getElementById('rover-id');
+                    roverIdElement.textContent = data.rover_id
                     updateGrid();
                 }
             } catch (error) {

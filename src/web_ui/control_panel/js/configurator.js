@@ -7,6 +7,7 @@ export class Configurator {
         this.currentConfig = {};
         this.configApplyHandler = null;
         this.versionData = null;
+        this.configSchemas = new Map(); // Кэш для схем конфигурации
     }
 
     async init() {
@@ -47,19 +48,90 @@ export class Configurator {
             return;
         }
 
-        // Генерируем UI для каждой схемы
-        Object.entries(components).forEach(([schemaName, schema]) => {
-            if (this.shouldDisplaySchema(schemaName, schema)) {
-                const section = this.createConfigSection(schemaName, schema);
-                sectionsContainer.appendChild(section);
-            }
+        // Находим главную схему конфигурации (с g_parser)
+        const mainConfigSchema = this.findMainConfigSchema(components);
+
+        if (!mainConfigSchema) {
+            sectionsContainer.innerHTML = '<div class="loading-config">Нет доступных конфигураций</div>';
+            return;
+        }
+
+        // Генерируем UI для главной схемы и всех вложенных
+        this.generateConfigUI(mainConfigSchema, components, sectionsContainer);
+    }
+
+    findMainConfigSchema(components) {
+        return Object.entries(components).find(([schemaName, schema]) => {
+            return this.shouldDisplaySchema(schemaName, schema);
         });
     }
 
     shouldDisplaySchema(schemaName, schema) {
-        // Фильтруем схемы для конфигурации
+
+        if (!schema || !schema.properties) return false;
+        // Ищем схемы с полем g_parser
+        const hasGParser = schema.properties && 'g_parser' in schema.properties;
+
+        // Исключаем служебные схемы
         const excluded = ['Error', 'Response', 'Message', 'HTTPValidationError', 'ValidationError'];
-        return !excluded.includes(schemaName) && schema.properties;
+
+        return hasGParser && !excluded.includes(schemaName) && schema.properties;
+    }
+
+    generateConfigUI(mainSchema, allSchemas, container) {
+        const [schemaName, schema] = mainSchema;
+
+        // Рекурсивно собираем все связанные схемы
+        const configSchemas = this.collectAllConfigSchemas(schemaName, schema, allSchemas);
+
+        // Генерируем UI для каждой найденной схемы конфигурации
+        configSchemas.forEach((configSchema, schemaName) => {
+            // Пропускаем главную схему с g_parser, т.к. она содержит только ссылки на вложенные
+            if (schemaName === mainSchema[0]) return;
+
+            if (!configSchema || !configSchema.properties) return false;
+
+            const section = this.createConfigSection(schemaName, configSchema);
+            container.appendChild(section);
+        });
+    }
+
+    collectAllConfigSchemas(startSchemaName, startSchema, allSchemas, collected = new Map()) {
+        // Добавляем текущую схему
+        collected.set(startSchemaName, startSchema);
+
+        // Рекурсивно ищем все вложенные схемы через $ref
+        this.findReferencedSchemas(startSchema, allSchemas, collected);
+
+        return collected;
+    }
+
+    findReferencedSchemas(schema, allSchemas, collected) {
+        if (!schema || typeof schema !== 'object') return;
+
+        if (schema.$ref) {
+            // Обрабатываем ссылки на другие схемы
+            const refName = schema.$ref.split('/').pop();
+            if (!collected.has(refName) && allSchemas[refName]) {
+                collected.set(refName, allSchemas[refName]);
+                this.findReferencedSchemas(allSchemas[refName], allSchemas, collected);
+            }
+        } else if (schema.properties) {
+            // Обрабатываем свойства объектов
+            Object.values(schema.properties).forEach(property => {
+                this.findReferencedSchemas(property, allSchemas, collected);
+            });
+        } else if (Array.isArray(schema)) {
+            // Обрабатываем массивы
+            schema.forEach(item => this.findReferencedSchemas(item, allSchemas, collected));
+        } else {
+            // Обрабатываем вложенные объекты
+            Object.values(schema).forEach(value => {
+                if (typeof value === 'object') {
+                    this.findReferencedSchemas(value, allSchemas, collected);
+                }
+            });
+        }
     }
 
     createConfigSection(schemaName, schema) {
@@ -76,39 +148,49 @@ export class Configurator {
             </div>
             <div class="section-content">
                 ${description ? `<div class="field-description">${description}</div>` : ''}
-                ${this.generateFields(schema.properties, schema.required || [])}
+                ${this.generateFields(schema.properties, schema.required || [], schemaName)}
             </div>
         `;
 
         return section;
     }
 
-    generateFields(properties, requiredFields) {
+    generateFields(properties, requiredFields, parentSchemaName = '') {
         let fieldsHTML = '';
 
         Object.entries(properties).forEach(([fieldName, fieldSchema]) => {
+            // Пропускаем поле-маркер g_parser
+            if (fieldName === 'g_parser') return;
+
             const isRequired = requiredFields.includes(fieldName);
-            fieldsHTML += this.generateField(fieldName, fieldSchema, isRequired);
+
+            // Генерируем поле с учетом родительской схемы для уникальности ID
+            fieldsHTML += this.generateField(fieldName, fieldSchema, isRequired, parentSchemaName);
         });
 
         return fieldsHTML;
     }
 
-    generateField(fieldName, fieldSchema, isRequired) {
+    generateField(fieldName, fieldSchema, isRequired, parentSchemaName = '') {
         const label = this.formatFieldName(fieldName);
         const description = fieldSchema.description || '';
-        const fieldId = `config_${fieldName}`;
+        // Добавляем родительскую схему к ID для уникальности
+        const fieldId = `config_${parentSchemaName}_${fieldName}`.replace(/[^a-zA-Z0-9_]/g, '_');
 
         let inputHTML = '';
+
+        // Обрабатываем ссылки на другие схемы (вложенные объекты)
+        if (fieldSchema.$ref) {
+            // Для вложенных объектов не показываем отдельное поле - они будут в своих секциях
+            return '';
+        }
 
         // Генерируем подходящий input на основе типа поля
         switch (fieldSchema.type) {
             case 'string':
                 if (fieldSchema.enum) {
-                    // Select для enum значений
                     inputHTML = this.generateSelect(fieldId, fieldSchema.enum, fieldSchema.default);
                 } else {
-                    // Text input для строк
                     inputHTML = `<input type="text" id="${fieldId}" class="field-input"
                         value="${fieldSchema.default || ''}"
                         placeholder="${fieldSchema.example || ''}">`;
@@ -118,10 +200,8 @@ export class Configurator {
             case 'number':
             case 'integer':
                 if (fieldSchema.minimum !== undefined || fieldSchema.maximum !== undefined) {
-                    // Range для чисел с ограничениями
                     inputHTML = this.generateRange(fieldId, fieldSchema);
                 } else {
-                    // Number input
                     inputHTML = `<input type="number" id="${fieldId}" class="field-input"
                         value="${fieldSchema.default || 0}"
                         step="${fieldSchema.type === 'integer' ? 1 : 0.1}">`;
@@ -129,13 +209,26 @@ export class Configurator {
                 break;
 
             case 'boolean':
-                // Checkbox для булевых значений
                 inputHTML = this.generateCheckbox(fieldId, fieldSchema.default || false);
+                break;
+
+            case 'object':
+                // Для объектов без $ref генерируем поля рекурсивно
+                if (fieldSchema.properties) {
+                    inputHTML = this.generateFields(fieldSchema.properties, fieldSchema.required || [], fieldName);
+                } else {
+                    inputHTML = `<div class="field-note">Объект конфигурации</div>`;
+                }
                 break;
 
             default:
                 inputHTML = `<input type="text" id="${fieldId}" class="field-input"
                     value="${JSON.stringify(fieldSchema.default || '')}">`;
+        }
+
+        // Если inputHTML содержит вложенные поля, возвращаем как есть
+        if (typeof inputHTML === 'string' && inputHTML.includes('config-field')) {
+            return inputHTML;
         }
 
         return `
@@ -186,9 +279,12 @@ export class Configurator {
         const fields = document.querySelectorAll('[id^="config_"]');
 
         fields.forEach(field => {
-            const fieldName = field.id.replace('config_', '');
+            const fullFieldId = field.id.replace('config_', '');
+            // Разбираем ID вида "ParentSchema_FieldName"
+            const parts = fullFieldId.split('_');
             let value;
 
+            // Определяем значение в зависимости от типа поля
             switch (field.type) {
                 case 'checkbox':
                     value = field.checked;
@@ -212,13 +308,27 @@ export class Configurator {
                     }
             }
 
-            // Сохраняем только если значение отличается от default
+            // Пропускаем пустые значения
             if (value !== '' && value !== null && value !== undefined) {
-                config[fieldName] = value;
+                // Строим вложенную структуру
+                this.setNestedValue(config, parts, value);
             }
         });
 
         return config;
+    }
+
+    // Вспомогательная функция для установки вложенных значений
+    setNestedValue(obj, path, value) {
+        if (path.length === 1) {
+            obj[path[0]] = value;
+        } else {
+            const current = path[0];
+            if (!obj[current]) {
+                obj[current] = {};
+            }
+            this.setNestedValue(obj[current], path.slice(1), value);
+        }
     }
 
     // Применение конфигурации к роверу
@@ -273,8 +383,15 @@ export class Configurator {
 
     // Заполнение формы значениями из конфигурации
     populateForm(config) {
-        Object.entries(config).forEach(([fieldName, value]) => {
-            const field = document.getElementById(`config_${fieldName}`);
+        // Рекурсивно обходим конфигурацию и заполняем поля
+        this.populateFormRecursive(config);
+    }
+
+    populateFormRecursive(config, prefix = '') {
+        Object.entries(config).forEach(([key, value]) => {
+            const fieldId = prefix ? `config_${prefix}_${key}` : `config_${key}`;
+            const field = document.getElementById(fieldId);
+
             if (field) {
                 if (field.type === 'checkbox') {
                     field.checked = Boolean(value);
@@ -287,6 +404,10 @@ export class Configurator {
                 } else {
                     field.value = value;
                 }
+            } else if (typeof value === 'object' && value !== null) {
+                // Рекурсивно обрабатываем вложенные объекты
+                const newPrefix = prefix ? `${prefix}_${key}` : key;
+                this.populateFormRecursive(value, newPrefix);
             }
         });
     }

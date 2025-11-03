@@ -1,90 +1,90 @@
+import { logger } from "./logger.js";
+
 export class WebSocketManager {
-    constructor() {
-        this.ws = null;
-        this.isConnected = false;
-        this.messageHandlers = [];
+  constructor() {
+    this.ws = null;
+    this.isConnected = false;
+    this.messageHandlers = [];
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+  }
+
+  connect(address = "ws://localhost:8765") {
+    try {
+      this.ws = new WebSocket(address);
+
+      this.ws.onopen = () => {
+        this.isConnected = true;
         this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
-    }
+        this.notifyStatus("connected", "Подключено к серверу");
+        logger.success("WebSocket подключен");
+      };
 
-    connect(address = 'ws://localhost:8765') {
-        try {
-            this.ws = new WebSocket(address);
-
-            this.ws.onopen = () => {
-                this.isConnected = true;
-                this.reconnectAttempts = 0;
-                this.notifyStatus('connected', 'Подключено к серверу');
-                console.log('WebSocket подключен');
-            };
-
-            this.ws.onclose = () => {
-                this.isConnected = false;
-                this.notifyStatus('disconnected', 'Соединение разорвано');
-                this.handleReconnect();
-            };
-
-            this.ws.onerror = (error) => {
-                console.error('WebSocket ошибка:', error);
-                this.notifyStatus('error', 'Ошибка подключения');
-            };
-
-            this.ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    this.notifyMessageHandlers(data);
-                } catch (error) {
-                    console.log('Невалидный JSON:', event.data);
-                }
-            };
-
-        } catch (error) {
-            console.error('Ошибка создания WebSocket:', error);
-            this.notifyStatus('error', `Ошибка: ${error.message}`);
-        }
-    }
-
-    disconnect() {
-        if (this.ws) {
-            this.ws.close();
-            this.ws = null;
-        }
+      this.ws.onclose = () => {
         this.isConnected = false;
-        this.notifyStatus('disconnected', 'Отключено вручную');
-    }
+        this.notifyStatus("disconnected", "Соединение разорвано");
+        this.handleReconnect();
+      };
 
-    sendCommand(command) {
-        if (!this.isConnected || !this.ws) {
-            console.warn('WebSocket не подключен');
-            return;
+      this.ws.onerror = (error) => {
+        logger.error(`WebSocket ошибка: ${error.message}`);
+        this.notifyStatus("error", "Ошибка подключения");
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          this.notifyMessageHandlers(data);
+        } catch (error) {
+          console.log("Невалидный JSON:", event.data);
         }
+      };
+    } catch (error) {
+      logger.error(`Ошибка создания WebSocket: ${error.message}`);
+      this.notifyStatus("error", `Ошибка: ${error.message}`);
+    }
+  }
 
-        this.ws.send(JSON.stringify(command));
+  disconnect() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    this.isConnected = false;
+    this.notifyStatus("disconnected", "Отключено вручную");
+  }
+
+  sendCommand(command) {
+    if (!this.isConnected || !this.ws) {
+      console.warn("WebSocket не подключен");
+      return;
     }
 
-    onMessage(handler) {
-        this.messageHandlers.push(handler);
-    }
+    this.ws.send(JSON.stringify(command));
+  }
 
-    notifyMessageHandlers(data) {
-        this.messageHandlers.forEach(handler => handler(data));
-    }
+  onMessage(handler) {
+    this.messageHandlers.push(handler);
+  }
 
-    notifyStatus(status, message) {
-        // Уведомляем UI о изменении статуса
-        const event = new CustomEvent('websocket-status', {
-            detail: { status, message }
-        });
-        document.dispatchEvent(event);
-    }
+  notifyMessageHandlers(data) {
+    this.messageHandlers.forEach((handler) => handler(data));
+  }
 
-    handleReconnect() {
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.reconnectAttempts++;
-            setTimeout(() => {
-                console.log(`Попытка переподключения ${this.reconnectAttempts}`);
-                this.connect();
-            }, 2000 * this.reconnectAttempts);
-        }
+  notifyStatus(status, message) {
+    const event = new CustomEvent("websocket-status", {
+      detail: { status, message },
+    });
+    document.dispatchEvent(event);
+  }
+
+  handleReconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      setTimeout(() => {
+        console.log(`Попытка переподключения ${this.reconnectAttempts}`);
+        this.connect();
+      }, 2000 * this.reconnectAttempts);
     }
+  }
 }

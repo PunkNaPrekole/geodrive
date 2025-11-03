@@ -7,6 +7,7 @@ class GeodriveControlPanel {
     constructor() {
         this.modules = {};
         this.roverApiBase = 'http://localhost:8000';
+        this.roverAddress = 'localhost';
     }
 
     async init() {
@@ -17,17 +18,52 @@ class GeodriveControlPanel {
 
         this.setupModuleConnections();
 
+        this.initTabs();
+
         await this.initModules();
 
         console.log('GEODRIVE Control Panel инициализирована');
     }
 
+    initTabs() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+
+                // Убираем активный класс у всех кнопок и контента
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+                // Добавляем активный класс текущей кнопке и соответствующему контенту
+                button.classList.add('active');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            });
+        });
+    }
+
     setupModuleConnections() {
-        // WebSocket сообщения распределяем по модулям
+
+        this.modules.map.onContextMenu((data) => {
+            if (data.type === 'navigate_to_point') {
+                // Отправляем команду через WebSocket
+                this.modules.websocket.sendCommand({
+                    type: 'navigate_to_point',
+                    target_x: data.target.x,
+                    target_y: data.target.y
+                });
+
+                this.modules.configurator.log(
+                    `Навигация к точке: X=${data.target.x.toFixed(2)}, Y=${data.target.y.toFixed(2)}`,
+                    'info'
+                );
+            }
+        });
         this.modules.websocket.onMessage((data) => {
             if (data.type === 'config') {
-                // Обновляем адрес API ровера
                 if (data.rover_address) {
+                    this.roverAddress = data.rover_address;
                     this.roverApiBase = `http://${data.rover_address}:8000`;
                     this.modules.configurator.setApiBase(this.roverApiBase);
                 }
@@ -36,14 +72,15 @@ class GeodriveControlPanel {
             if (data.type === 'telemetry') {
                 this.modules.map.updatePosition(data);
             }
+            if (data.type === 'log') {
+                this.modules.configurator.log(data.message, data.msg_type)
+            }
         });
 
-        // Управление -> WebSocket
-        this.modules.controls.onCommand((command) => {
-            this.modules.websocket.sendCommand(command);
-        });
+//        this.modules.controls.onCommand((command) => {
+//            this.modules.websocket.sendCommand(command);
+//        });
 
-        // Конфигуратор -> API
         this.modules.configurator.onConfigApply((config) => {
             this.applyConfiguration(config);
         });
@@ -73,19 +110,10 @@ class GeodriveControlPanel {
             this.modules.configurator.log(`Ошибка: ${error.message}`, 'error');
         }
     }
-
-    connect() {
-        this.modules.websocket.connect();
-    }
-
-    disconnect() {
-        this.modules.websocket.disconnect();
-    }
 }
 
 const app = new GeodriveControlPanel();
 app.init().catch(console.error);
 
-// Экспортируем для глобального доступа если понадобится
 window.GeodriveControlPanel = GeodriveControlPanel;
 window.app = app;
