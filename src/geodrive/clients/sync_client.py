@@ -145,7 +145,7 @@ class RoverClient:
         """
         return self._communicator.send_command(RoverCommands.EMERGENCY_STOP)
 
-    def stream_telemetry(self) -> Generator[TelemetryData]:
+    def stream_telemetry(self) -> Generator[TelemetryData, None, None]:
         """
         Потоковое получение телеметрии
 

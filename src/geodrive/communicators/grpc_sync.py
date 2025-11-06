@@ -147,7 +147,7 @@ class GRPCCommunicator(BaseCommunicator):
         response = self.stub.get_telemetry(request)
         return response
 
-    def stream_telemetry(self) -> Generator[TelemetryData]:
+    def stream_telemetry(self) -> Generator[TelemetryData, None, None]:
         """
         Получить поток телеметрии в реальном времени.
 
@@ -182,7 +182,7 @@ class GRPCCommunicator(BaseCommunicator):
             x: float,
             y: float,
             yaw: float | None=None
-    ) -> Generator[GotoProgress]:
+    ) -> Generator[GotoProgress, None, None]:
         """
         Выполнить движение к точке с потоковой передачей прогресса.
 

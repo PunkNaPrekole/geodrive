@@ -14,7 +14,7 @@ class AsyncRoverClient:
     Асинхронный клиент для управления ровером
     """
 
-    def __init__(self, host: str = "localhost", port: int = 5656, logging: bool = False):
+    def __init__(self, host: str = "localhost", port: int = 5656):
         self._communicator = AsyncGRPCCommunicator(host, port)
         self._is_rc_streaming: bool = False
         self._rc_stream_task = None
